@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -13,11 +14,13 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -89,7 +92,25 @@ public class MainActivity extends AppCompatActivity {
         if(imageCapture == null)
             return;
 
+        final File photoFile = new File(outputDirectory ,
+                new SimpleDateFormat(FILENAME_FORMAT).format(System.currentTimeMillis()) +".jpeg");
 
+        final ImageCapture.OutputFileOptions options =
+                new ImageCapture.OutputFileOptions.Builder(photoFile).build();
+        imageCapture.takePicture(options, ContextCompat.getMainExecutor(this),
+                new ImageCapture.OnImageSavedCallback() {
+                    @Override
+                    public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                        String msg = "Photo capture succeeded " + photoFile.getAbsolutePath();
+                        Toast.makeText(getBaseContext(), msg, Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, msg);
+                    }
+
+                    @Override
+                    public void onError(@NonNull ImageCaptureException exception) {
+                        Log.e(TAG, "拍摄图片失败: " + exception.getMessage());
+                    }
+                });
     }
 
     //start preview
@@ -118,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
 
             CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
             cameraProvider.unbindAll();
-            cameraProvider.bindToLifecycle(this , cameraSelector , preview);
+            cameraProvider.bindToLifecycle(this , cameraSelector , preview , imageCapture);
 
         } , ContextCompat.getMainExecutor(this));
     }

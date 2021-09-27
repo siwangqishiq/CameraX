@@ -2,7 +2,11 @@ package panyi.xyz.camerax;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
+import androidx.camera.core.Preview;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -11,7 +15,10 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import java.io.File;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -74,15 +81,46 @@ public class MainActivity extends AppCompatActivity {
             File mediaFile = mediaDirs[0];
             return mediaFile;
         }
+
         return getFilesDir();
     }
 
     public void takePhoto(){
+        if(imageCapture == null)
+            return;
+
 
     }
 
+    //start preview
     public void startCamera(){
+        final ListenableFuture<ProcessCameraProvider> cameraProviderFuture
+                = ProcessCameraProvider.getInstance(this);
+        cameraProviderFuture.addListener(()->{
+            ProcessCameraProvider cameraProvider = null;
+            try {
+                cameraProvider = cameraProviderFuture.get();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
+            if(cameraProvider == null)
+                return;
+
+            imageCapture = new ImageCapture.Builder().build();
+
+            final Preview preview = new Preview.Builder().build();
+
+            PreviewView previewView = findViewById(R.id.viewFinder);
+            preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
+            CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+            cameraProvider.unbindAll();
+            cameraProvider.bindToLifecycle(this , cameraSelector , preview);
+
+        } , ContextCompat.getMainExecutor(this));
     }
 
     @Override

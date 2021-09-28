@@ -35,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private File outputDirectory;
     private ExecutorService cameraExecutor;
 
+    private MyLocationListener mLocation;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,6 +54,10 @@ public class MainActivity extends AppCompatActivity {
             takePhoto();
         });
         cameraExecutor = Executors.newSingleThreadExecutor();
+
+        mLocation = new MyLocationListener();
+        getLifecycle().addObserver(mLocation);
+        getLifecycle().addObserver(new OwnWidget());
     }
 
     private boolean allPermissionsGranted(){
@@ -137,10 +143,14 @@ public class MainActivity extends AppCompatActivity {
             PreviewView previewView = findViewById(R.id.viewFinder);
             preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-            CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
-            cameraProvider.unbindAll();
-            cameraProvider.bindToLifecycle(this , cameraSelector , preview , imageCapture);
-
+            try{
+//                CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+                CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
+                cameraProvider.unbindAll();
+                cameraProvider.bindToLifecycle(this , cameraSelector , preview , imageCapture);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         } , ContextCompat.getMainExecutor(this));
     }
 
